@@ -3,6 +3,8 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -10,33 +12,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v5
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: '3.8'
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
     - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y ant
         python -m pip install --upgrade pip
         pip install buildozer cython
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Accept Android licenses
+    - name: Pre-create Android SDK with licenses accepted
       run: |
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        # Create the buildozer android platform directory
+        mkdir -p ~/.buildozer/android/platform/android-sdk
+        
+        # Download and set up Android SDK that buildozer expects
+        cd ~/.buildozer/android/platform/android-sdk
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
+        unzip -q commandlinetools-linux-6514223_latest.zip
+        
+        # Create the SDK structure buildozer expects
+        mkdir -p cmdline-tools/latest
+        mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+        
+        # Accept ALL licenses preemptively
+        yes | cmdline-tools/latest/bin/sdkmanager --licenses
+        
+        # Install the build tools that were failing
+        cmdline-tools/latest/bin/sdkmanager "build-tools;30.0.3"
+        cmdline-tools/latest/bin/sdkmanager "platforms;android-30"
 
-    - name: Build with Buildozer
+    - name: Build APK
       run: |
         buildozer android debug
 
     - name: Upload APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: mix-cd-scrobbler-debug.apk
+        name: mix-cd-scrobbler-apk
         path: bin/*.apk
