@@ -25,32 +25,29 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        cmdline-tools-version: '16.0'
-        accept-android-sdk-licenses: true
-        packages: 'platforms;android-29 build-tools;29.0.3 ndk;21.4.7075529'
+    - name: Use pre-installed Android SDK
+      run: |
+        echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+        echo "PATH=/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
-    - name: Install system dependencies for autotools
+    - name: Accept SDK licenses with pre-installed tools
+      run: |
+        yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y autoconf automake libtool pkg-config
+        sudo apt-get install -y autoconf automake libtool
 
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install buildozer cython
 
-    - name: Accept buildozer SDK licenses
+    - name: Create simple buildozer.spec
       run: |
-        export BUILDOZER_ANDROID_ACCEPT_SDK_LICENSE=1
-        echo "BUILDOZER_ANDROID_ACCEPT_SDK_LICENSE=1" >> $GITHUB_ENV
-
-    - name: Build APK with simpler configuration
-      run: |
-        # Create a minimal buildozer.spec for testing
-        cat > buildozer.spec << EOF
+        cat > buildozer.spec << 'EOF'
         [app]
         title = Mix CD Scrobbler
         package.name = mixcdscrobbler
@@ -66,14 +63,12 @@ jobs:
         [app:android]
         bootstrap = sdl2
         android.accept_sdk_license = True
-        android.api = 29
-        android.minapi = 21
-        android.sdk = 29
-        android.ndk = 21b
         android.archs = arm64-v8a
         android.permissions = INTERNET,ACCESS_NETWORK_STATE
         EOF
-        
+
+    - name: Build APK
+      run: |
         buildozer android debug --verbose
 
     - name: Upload APK
