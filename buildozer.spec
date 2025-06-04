@@ -1,42 +1,32 @@
-[app]
-title = Mix CD Scrobbler
-package.name = mixcdscrobbler
-package.domain = org.example
+name: Build Android APK
 
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
-version = 0.1
-requirements = python3,kivy,requests,urllib3,certifi
+jobs:
+  build-android:
+    name: Build for Android
+    runs-on: ubuntu-latest
 
-[buildozer]
-log_level = 2
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
-[app:android]
-# Android specific
-bootstrap = sdl2
+    - name: Build with Buildozer
+      uses: ArtemSBulgakov/buildozer-action@v1
+      id: buildozer
+      with:
+        command: buildozer android debug
+        buildozer_version: stable
+      env:
+        APP_ANDROID_ACCEPT_SDK_LICENSE: ${{ secrets.ANDROID_SDK_LICENSE || 'true' }}
 
-# Accept all Android SDK licenses
-android.accept_sdk_license = True
-
-# Use specific API levels that work better with GitHub Actions
-android.api = 31
-android.minapi = 21
-android.sdk = 31
-android.ndk = 25b
-
-# Permissions
-android.permissions = INTERNET,ACCESS_NETWORK_STATE
-
-# Force specific architectures to avoid compilation issues
-android.archs = arm64-v8a
-
-# Skip problematic recipes that cause libffi issues
-android.skip_update = False
-android.gradle_dependencies = 
-
-# Use release mode for more stable compilation
-android.release_unsigned = True
-
-[app:android.gradle]
-android.gradle_dependencies =
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mix-cd-scrobbler-apk
+        path: ${{ steps.buildozer.outputs.filename }}
