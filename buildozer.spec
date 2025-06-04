@@ -13,3 +13,7 @@ android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 [buildozer]
 log_level = 2
 bin_dir = ./.buildozer/bin
+
+[app:android]
+android.sdk_path = /usr/local/lib/android/sdk
+android.accept_sdk_license = True
