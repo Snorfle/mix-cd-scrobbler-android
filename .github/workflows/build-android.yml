@@ -12,51 +12,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.8'
 
     - name: Set up Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 30
+        build-tools: 30.0.3
+        ndk-version: 23.1.7779620
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install buildozer cython
 
-    - name: Pre-create Android SDK with licenses accepted
+    - name: Accept buildozer SDK licenses automatically
       run: |
-        # Create the buildozer android platform directory
-        mkdir -p ~/.buildozer/android/platform/android-sdk
-        
-        # Download and set up Android SDK that buildozer expects
-        cd ~/.buildozer/android/platform/android-sdk
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip
-        unzip -q commandlinetools-linux-6514223_latest.zip
-        
-        # Create the SDK structure buildozer expects
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
-        
-        # Accept ALL licenses preemptively
-        yes | cmdline-tools/latest/bin/sdkmanager --licenses
-        
-        # Install the build tools that were failing
-        cmdline-tools/latest/bin/sdkmanager "build-tools;30.0.3"
-        cmdline-tools/latest/bin/sdkmanager "platforms;android-30"
+        # This will automatically accept licenses when buildozer downloads its own SDK
+        export BUILDOZER_ANDROID_ACCEPT_SDK_LICENSE=1
+        echo "BUILDOZER_ANDROID_ACCEPT_SDK_LICENSE=1" >> $GITHUB_ENV
 
-    - name: Build APK
+    - name: Build APK with automatic license acceptance
       run: |
-        buildozer android debug
+        # Use 'yes' to automatically accept all prompts
+        yes | buildozer android debug
 
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: mix-cd-scrobbler-apk
         path: bin/*.apk
