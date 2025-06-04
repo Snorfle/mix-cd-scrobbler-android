@@ -29,6 +29,8 @@ jobs:
 
     - name: Build with Buildozer
       run: |
+        ls -la
+        pwd
         buildozer android debug
 
     - name: Upload APK
