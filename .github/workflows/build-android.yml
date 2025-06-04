@@ -23,14 +23,14 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '11'  # Changed back to Java 11 for better compatibility
+        java-version: '17'
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        api-level: 29  # Use older API level for better compatibility
-        build-tools: 29.0.3
-        ndk-version: 21.4.7075529  # Use older NDK that works better with libffi
+        cmdline-tools-version: '16.0'
+        accept-android-sdk-licenses: true
+        packages: 'platforms;android-29 build-tools;29.0.3 ndk;21.4.7075529'
 
     - name: Install system dependencies for autotools
       run: |
